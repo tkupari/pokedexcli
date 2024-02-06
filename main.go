@@ -9,7 +9,12 @@ import (
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(*config) error
+}
+
+type config struct {
+	Next string
+	Previous string
 }
 
 func getCommands() map[string]cliCommand {
@@ -24,10 +29,20 @@ func getCommands() map[string]cliCommand {
 			description: "Exit the Pokedex",
 			callback:    commandExit,
 		},
+		"map": {
+			name:        "map",
+			description: "List next 20 locations",
+			callback:    commandNext,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "List previous 20 locations",
+			callback:    commandPrevious,
+		},
 	}
 }
 
-func commandHelp() error {
+func commandHelp(cfg *config) error {
 
 	fmt.Println("Welcome to the Pokedex!")
 	fmt.Println("Usage:")
@@ -39,13 +54,22 @@ func commandHelp() error {
 	return nil
 }
 
-func commandExit() error {
+func commandExit(cfg *config) error {
 	fmt.Println("Exiting program..")
 	os.Exit(0)
 	return nil
 }
 
+func commandNext(cfg *config) error {
+	return nil
+}
+
+func commandPrevious(cfg *config) error {
+	return nil
+}
+
 func main() {
+	cfg := config{}
 	commands := getCommands()
 	reader := bufio.NewScanner(os.Stdin)
 	for {
@@ -58,6 +82,6 @@ func main() {
 			fmt.Println("invalid command: " + input)
 			continue
 		}
-		command.callback()
+		command.callback(&cfg)
 	}
 }
