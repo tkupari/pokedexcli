@@ -2,7 +2,11 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 )
 
@@ -15,6 +19,18 @@ type cliCommand struct {
 type config struct {
 	Next string
 	Previous string
+}
+
+type location struct {
+	Name string `json:"name"`
+	URL  string `json:"url"`
+}
+
+type locationApiResponse struct {
+	Count    int    `json:"count"`
+	Next     string `json:"next"`
+	Previous any    `json:"previous"`
+	Results  []location  `json:"results"`
 }
 
 func getCommands() map[string]cliCommand {
@@ -61,6 +77,33 @@ func commandExit(cfg *config) error {
 }
 
 func commandNext(cfg *config) error {
+	fmt.Println("get locations")
+	res, err := http.Get("https://pokeapi.co/api/v2/location/")
+	if err != nil {
+		return errors.New("cannot fetch locations")
+	}
+	body, err := io.ReadAll(res.Body)
+	if res.StatusCode > 299 {
+		error := fmt.Sprintf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
+		fmt.Println(error)
+		return errors.New(error)
+	}
+	res.Body.Close()
+	if err != nil {
+		fmt.Println(err)
+		return err
+
+	}
+	responseJson := locationApiResponse{}
+	err = json.Unmarshal(body, &responseJson)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	fmt.Println(responseJson.Results)
+	for _, location := range responseJson.Results {
+		fmt.Println(location.Name)
+	}
 	return nil
 }
 
