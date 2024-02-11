@@ -17,7 +17,7 @@ type cliCommand struct {
 }
 
 type config struct {
-	Next string
+	Next     string
 	Previous string
 }
 
@@ -27,10 +27,10 @@ type location struct {
 }
 
 type locationApiResponse struct {
-	Count    int    `json:"count"`
-	Next     string `json:"next"`
-	Previous any    `json:"previous"`
-	Results  []location  `json:"results"`
+	Count    int        `json:"count"`
+	Next     string     `json:"next"`
+	Previous string     `json:"previous"`
+	Results  []location `json:"results"`
 }
 
 func getCommands() map[string]cliCommand {
