@@ -33,6 +33,8 @@ type locationApiResponse struct {
 	Results  []location `json:"results"`
 }
 
+const locationEndpoint string = "https://pokeapi.co/api/v2/location/"
+
 func getCommands() map[string]cliCommand {
 	return map[string]cliCommand{
 		"help": {
@@ -77,38 +79,64 @@ func commandExit(cfg *config) error {
 }
 
 func commandNext(cfg *config) error {
-	fmt.Println("get locations")
-	res, err := http.Get("https://pokeapi.co/api/v2/location/")
+	locationUrl := locationEndpoint
+	if cfg.Next != "" {
+		locationUrl = cfg.Next
+	}
+	response, err := fetchLocation(locationUrl)
 	if err != nil {
-		return errors.New("cannot fetch locations")
+		fmt.Println(err)
+		return err
+	}
+	for _, location := range response.Results {
+		fmt.Println(location.Name)
+	}
+	cfg.Next = response.Next
+	cfg.Previous = response.Previous
+	return nil
+}
+
+func commandPrevious(cfg *config) error {
+	if cfg.Previous == "" {
+		return errors.New("previous page not available")
+	}
+	response, err := fetchLocation(cfg.Previous)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	for _, location := range response.Results {
+		fmt.Println(location.Name)
+	}
+	cfg.Next = response.Next
+	cfg.Previous = response.Previous
+	return nil
+}
+
+func fetchLocation(url string) (locationApiResponse, error) {
+	res, err := http.Get(url)
+	if err != nil {
+		return locationApiResponse{}, errors.New("cannot fetch locations")
 	}
 	body, err := io.ReadAll(res.Body)
 	if res.StatusCode > 299 {
 		error := fmt.Sprintf("Response failed with status code: %d and\nbody: %s\n", res.StatusCode, body)
 		fmt.Println(error)
-		return errors.New(error)
+		return locationApiResponse{}, errors.New(error)
 	}
 	res.Body.Close()
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return locationApiResponse{}, err
 
 	}
 	responseJson := locationApiResponse{}
 	err = json.Unmarshal(body, &responseJson)
 	if err != nil {
 		fmt.Println(err)
-		return err
+		return locationApiResponse{}, err
 	}
-	fmt.Println(responseJson.Results)
-	for _, location := range responseJson.Results {
-		fmt.Println(location.Name)
-	}
-	return nil
-}
-
-func commandPrevious(cfg *config) error {
-	return nil
+	return responseJson, nil
 }
 
 func main() {
@@ -125,6 +153,9 @@ func main() {
 			fmt.Println("invalid command: " + input)
 			continue
 		}
-		command.callback(&cfg)
+		err := command.callback(&cfg)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 }
